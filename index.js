@@ -4,6 +4,7 @@ const ErrorClass = require('./src/errors/trie');
 const Node = require('./src/model/node');
 const _ = require('lodash');
 const Error = new ErrorClass();
+const uniq = require('array-uniq');
 
 class Trie {
     /**
@@ -34,6 +35,44 @@ class Trie {
             this.has_delimiter = false;
         }
         this.first_level_map = {};
+        this.first_char_of_all_words = [];
+    }
+
+    wordCount() {
+        return this.first_char_of_all_words.length;
+    }
+
+    longestCompoundWord() {
+        const uniqueKeys = uniq(this.first_char_of_all_words);
+        let longestStr = '';
+        uniqueKeys.forEach(key => {
+            const valuesforKey = this.nearMatch(key);
+            // if there is only 1 result that means there are no compounded words
+            if (valuesforKey.length > 1) {
+                // remove the first word on which other compounds are based
+                valuesforKey.splice(0, 1);
+                valuesforKey.forEach(value => {
+                    if (value.length > longestStr.length) {
+                        longestStr = value;
+                    }
+                });
+            }
+        });
+        return longestStr;
+    }
+
+    longestWord() {
+        const uniqueKeys = uniq(this.first_char_of_all_words);
+        let longestStr = '';
+        uniqueKeys.forEach(key => {
+            const valuesforKey = this.nearMatch(key);
+            valuesforKey.forEach(value => {
+                if (value.length > longestStr.length) {
+                    longestStr = value;
+                }
+            });
+        });
+        return longestStr;
     }
 
     _getFirstLevelMap() {
@@ -88,6 +127,10 @@ class Trie {
             values = value.split('');
             firstKey = values[0];
         }
+
+        // Added first char of all words added to trie
+        this.first_char_of_all_words.push(firstKey);
+
         if (this._getFirstLevelMap()[firstKey]) {
             const firstNode = this.first_level_map[firstKey];
             return this._addValueToNode(firstNode, values.splice(1));
@@ -165,6 +208,8 @@ class Trie {
             return this._removeValue(node.getNode(nextKey), values.splice(1));
         }
     }
+
+
 
     nearMatch(value) {
         if (_.isEmpty(value)) {
